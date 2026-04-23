@@ -39,6 +39,15 @@
       "easy": "Easy",
       "medium": "Medium",
       "hard": "Hard"
+    },
+    "streakMilestone": "On Fire! {{count}} streak!",
+    "mascot": {
+      "default": "I am here to help! Let's solve this together.",
+      "great": "Amazing! That was super smart!",
+      "tryAgain": "Nice try! Let's do the next one together.",
+      "youCanDoIt": "You can do it! Keep your eyes on the numbers.",
+      "keepGoing": "Great effort! Keep going, math hero!",
+      "almostThere": "Almost there! You are getting stronger."
     }
   },
   "history": {
@@ -49,7 +58,16 @@
     "clear": "Clear History",
     "mode": "{{difficulty}} Mode",
     "score": "Score: {{score}} / {{total}}",
-    "accuracy": "Accuracy: {{value}}%"
+    "accuracy": "Accuracy: {{value}}%",
+    "myAwards": "My Awards",
+    "noAwards": "No badges yet. Finish quizzes with top scores to earn shiny awards!",
+    "badges": {
+      "perfect_score": "Perfect Score",
+      "easy_master": "Easy Master",
+      "medium_master": "Medium Master",
+      "hard_master": "Hard Master",
+      "streak_star": "Streak Star"
+    }
   },
   "learn": {
     "title": "Learn",

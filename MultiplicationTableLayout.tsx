@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BookOpen, ChevronDown, Gamepad2, History, Moon, Sun } from "lucide-react";
+import { BookOpen, Bot, ChevronDown, Flame, Gamepad2, History, Lightbulb, Moon, Sparkles, Star, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "./components/ui/button";
@@ -22,6 +22,7 @@ type QuizResult = {
   difficulty: DifficultyId;
   score: number;
   total: number;
+  badges: string[];
 };
 
 type DivProps = React.HTMLAttributes<HTMLDivElement>;
@@ -198,6 +199,11 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
   const [answerInput, setAnswerInput] = React.useState("");
   const [correctCount, setCorrectCount] = React.useState(0);
   const [feedback, setFeedback] = React.useState<FeedbackState>("idle");
+  const [streak, setStreak] = React.useState(0);
+  const [showHint, setShowHint] = React.useState(false);
+  const [milestonePopup, setMilestonePopup] = React.useState<string | null>(null);
+  const [mascotMood, setMascotMood] = React.useState<"idle" | "happy" | "supportive">("idle");
+  const [mascotText, setMascotText] = React.useState("");
 
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -221,6 +227,11 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
     setCorrectCount(0);
     setAnswerInput("");
     setFeedback("idle");
+    setStreak(0);
+    setShowHint(false);
+    setMilestonePopup(null);
+    setMascotMood("idle");
+    setMascotText("");
     setFinished(false);
     setStarted(true);
   }, [currentLevel]);
@@ -238,21 +249,57 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
       setFeedback(isCorrect ? "correct" : "incorrect");
       if (isCorrect) {
         setCorrectCount((prev) => prev + 1);
+        setMascotMood("happy");
+        setMascotText(t("quiz.mascot.great"));
+        setStreak((prev) => {
+          const next = prev + 1;
+          if ([3, 5, 10].includes(next)) {
+            setMilestonePopup(t("quiz.streakMilestone", { count: next }));
+          }
+          return next;
+        });
+      } else {
+        const encouragements = [
+          t("quiz.mascot.tryAgain"),
+          t("quiz.mascot.youCanDoIt"),
+          t("quiz.mascot.keepGoing"),
+          t("quiz.mascot.almostThere")
+        ];
+        const randomPhrase = encouragements[randomInt(0, encouragements.length - 1)];
+        setMascotMood("supportive");
+        setMascotText(randomPhrase);
+        setStreak(0);
       }
 
       window.setTimeout(() => {
         const isLast = currentIndex >= questions.length - 1;
         if (isLast) {
           setFinished(true);
-          onComplete({ difficulty, score: nextCorrectCount, total: questions.length });
+          const earnedBadges: string[] = [];
+          const isPerfect = nextCorrectCount === questions.length;
+          if (isPerfect) {
+            earnedBadges.push("perfect_score");
+            if (difficulty === "easy") earnedBadges.push("easy_master");
+            if (difficulty === "medium") earnedBadges.push("medium_master");
+            if (difficulty === "hard") earnedBadges.push("hard_master");
+          }
+          if (streak >= 10 || [3, 5, 10].includes(streak)) {
+            earnedBadges.push("streak_star");
+          }
+          onComplete({ difficulty, score: nextCorrectCount, total: questions.length, badges: earnedBadges });
           return;
         }
         setCurrentIndex((prev) => prev + 1);
         setAnswerInput("");
         setFeedback("idle");
+        setShowHint(false);
+        setMascotMood("idle");
       }, 380);
+      window.setTimeout(() => {
+        setMilestonePopup(null);
+      }, 1400);
     },
-    [answerInput, correctCount, currentIndex, currentQuestion, difficulty, onComplete, questions.length]
+    [answerInput, correctCount, currentIndex, currentQuestion, difficulty, onComplete, questions.length, streak, t]
   );
 
   return (
@@ -290,7 +337,26 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
           <div className="space-y-2">
             <div className="flex min-h-[24px] items-center justify-between text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
               <span>{t("quiz.questionProgress", { current: started ? currentIndex + 1 : 0, total: totalQuestions })}</span>
-              <span className="min-w-[84px] text-right">{t(`quiz.difficulties.${difficulty}`)}</span>
+              <div className="flex items-center gap-2">
+                <span className="min-w-[92px] text-right">
+                  Score: {correctCount}/{started ? currentIndex : 0}
+                </span>
+                {streak >= 3 && (
+                  <span className="fire-badge inline-flex min-w-[96px] items-center justify-center gap-1 rounded-full bg-orange-500/90 px-2 py-1 text-[11px] font-semibold text-white">
+                    <Flame className="h-3.5 w-3.5" />
+                    On Fire!
+                  </span>
+                )}
+                <span className="min-w-[84px] text-right">{t(`quiz.difficulties.${difficulty}`)}</span>
+              </div>
+            </div>
+            <div className="min-h-[28px]">
+              {milestonePopup && (
+                <div className="streak-pop inline-flex items-center gap-2 rounded-full bg-orange-500/90 px-3 py-1 text-xs font-semibold text-white">
+                  <Flame className="h-4 w-4" />
+                  {milestonePopup}
+                </div>
+              )}
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
               <progress
@@ -309,11 +375,61 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
             ].join(" ")}
           >
             <CardContent className="flex min-h-[172px] items-center justify-center">
-              <p className="text-center text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                {started && currentQuestion ? `${currentQuestion.left} x ${currentQuestion.right} = ?` : "— x — = ?"}
+              <div className="flex items-center gap-3">
+                <p className="text-center text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  {started && currentQuestion ? `${currentQuestion.left} x ${currentQuestion.right} = ?` : "— x — = ?"}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowHint((prev) => !prev)}
+                  disabled={!started || finished || !currentQuestion}
+                  className="h-10 min-w-[40px] rounded-full p-0"
+                  aria-label="Toggle visual hint"
+                >
+                  <Lightbulb className={`h-5 w-5 ${showHint ? "text-amber-500" : ""}`} />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardContent className="flex min-h-[64px] items-center gap-3 pt-5">
+              <div
+                className={[
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-300",
+                  mascotMood === "happy" ? "mascot-bounce" : "",
+                  mascotMood === "supportive" ? "mascot-wiggle" : ""
+                ].join(" ")}
+              >
+                <Bot className="h-5 w-5" />
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {mascotText || t("quiz.mascot.default")}
               </p>
             </CardContent>
           </Card>
+
+          <div className="min-h-[120px]">
+            {showHint && started && currentQuestion ? (
+              <div className="hint-pop rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                <div className="inline-grid gap-1.5">
+                  {Array.from({ length: currentQuestion.left }, (_, rowIdx) => (
+                    <div key={`hint-row-${rowIdx}`} className="flex gap-1.5">
+                      {Array.from({ length: currentQuestion.right }, (_, colIdx) => (
+                        <Star
+                          key={`hint-icon-${rowIdx}-${colIdx}`}
+                          className="h-4 w-4 fill-emerald-400 text-emerald-500 dark:fill-emerald-500/70 dark:text-emerald-400"
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div />
+            )}
+          </div>
 
           <form onSubmit={submitAnswer} className="space-y-3">
             <label className="block text-center text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
@@ -417,9 +533,43 @@ function HistoryView({ history, onClear }: { history: QuizResult[]; onClear: () 
         history.reduce((sum, item) => sum + Math.round((item.score / item.total) * 100), 0) / history.length
       )
     : 0;
+  const allBadges = React.useMemo(() => {
+    const unique = new Set<string>();
+    for (const item of history) {
+      for (const badge of item.badges ?? []) unique.add(badge);
+    }
+    return Array.from(unique);
+  }, [history]);
 
   return (
     <section className="space-y-6">
+      <Card className="award-glow">
+        <CardHeader>
+          <CardTitle>{t("history.myAwards")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {allBadges.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              {t("history.noAwards")}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {allBadges.map((badge) => (
+                <div
+                  key={badge}
+                  className="award-card flex min-h-[90px] items-center gap-3 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 px-4 py-3 dark:border-amber-800/50 dark:from-amber-900/30 dark:via-fuchsia-900/20 dark:to-violet-900/20"
+                >
+                  <Sparkles className="h-5 w-5 text-amber-500" />
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    {t(`history.badges.${badge}`)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
           { label: t("history.recentAttempts", { count: history.length }), value: `${history.length}` },
