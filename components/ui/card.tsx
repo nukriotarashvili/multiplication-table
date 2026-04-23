@@ -1,0 +1,19 @@
+import * as React from "react";
+
+type DivProps = React.HTMLAttributes<HTMLDivElement>;
+
+export function Card({ className = "", ...props }: DivProps) {
+  return <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props} />;
+}
+
+export function CardHeader({ className = "", ...props }: DivProps) {
+  return <div className={`flex flex-col space-y-1.5 p-4 sm:p-6 ${className}`} {...props} />;
+}
+
+export function CardTitle({ className = "", ...props }: DivProps) {
+  return <div className={`font-semibold leading-none tracking-tight ${className}`} {...props} />;
+}
+
+export function CardContent({ className = "", ...props }: DivProps) {
+  return <div className={`p-4 pt-0 sm:p-6 sm:pt-0 ${className}`} {...props} />;
+}

@@ -1,0 +1,67 @@
+{
+  "app": {
+    "title": "Multiplication Table",
+    "subtitle": "Master numbers daily"
+  },
+  "tabs": {
+    "quiz": "Quiz",
+    "learn": "Learn",
+    "history": "History"
+  },
+  "theme": {
+    "toLight": "Switch to light mode",
+    "toDark": "Switch to dark mode",
+    "light": "Light mode",
+    "dark": "Dark mode"
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "georgian": "Georgian"
+  },
+  "quiz": {
+    "title": "Play Quiz",
+    "chooseDifficulty": "Choose a difficulty and start practicing multiplication.",
+    "start": "Start Quiz",
+    "playAgain": "Play Again",
+    "complete": "Quiz complete.",
+    "finalScore": "Final score: {{score}} / {{total}}",
+    "accuracy": "{{value}}% accuracy",
+    "questionProgress": "Question {{current}} / {{total}}",
+    "yourAnswer": "Your answer",
+    "placeholder": "Type a number",
+    "submit": "Submit",
+    "correct": "Correct!",
+    "incorrect": "Incorrect. Correct answer: {{answer}}",
+    "feedbackPlaceholder": "Feedback placeholder",
+    "difficultyRange": "{{label}} ({{count}}) - {{min}} to {{max}}",
+    "difficulties": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    }
+  },
+  "history": {
+    "title": "History",
+    "noAttempts": "No quiz attempts yet. Complete a quiz to see your history.",
+    "placeholder": "Your saved results will appear here.",
+    "recentAttempts": "Recent attempts: {{count}}",
+    "clear": "Clear History",
+    "mode": "{{difficulty}} Mode",
+    "score": "Score: {{score}} / {{total}}",
+    "accuracy": "Accuracy: {{value}}%"
+  },
+  "learn": {
+    "title": "Learn",
+    "hoverHint": "Hover any cell to highlight its row and column.",
+    "patternHints": "Pattern Hints",
+    "nineTitle": "9s trick:",
+    "nineText": "for 9 x n, the digits of the result add up to 9 (for example, 9 x 7 = 63, and 6 + 3 = 9).",
+    "fiveTitle": "5s trick:",
+    "fiveText": "multiplying by 5 ends in 0 or 5. For even numbers, divide by 2 then add 0; for odd numbers, divide by 2 and end with 5.",
+    "tenTitle": "10s trick:",
+    "tenText": "multiplying by 10 is just adding one zero at the end of the number.",
+    "elevenTitle": "11s trick:",
+    "elevenText": "for single digits, repeat the number (for example, 11 x 6 = 66)."
+  }
+}

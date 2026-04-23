@@ -1,0 +1,57 @@
+.quiz-correct-glow {
+  animation: quiz-correct-glow 520ms ease-out;
+}
+
+.quiz-incorrect-shake {
+  animation: quiz-incorrect-shake 260ms ease-in-out;
+}
+
+.quiz-progress {
+  appearance: none;
+  background-color: rgba(148, 163, 184, 0.25);
+}
+
+.quiz-progress::-webkit-progress-bar {
+  background-color: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+
+.quiz-progress::-webkit-progress-value {
+  background-color: rgb(16, 185, 129);
+  border-radius: 999px;
+}
+
+.quiz-progress::-moz-progress-bar {
+  background-color: rgb(16, 185, 129);
+  border-radius: 999px;
+}
+
+@keyframes quiz-correct-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(16, 185, 129, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes quiz-incorrect-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+    background-color: rgba(239, 68, 68, 0);
+  }
+  25% {
+    transform: translateX(-7px);
+  }
+  50% {
+    transform: translateX(7px);
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+}
