@@ -1,10 +1,30 @@
 "use client";
 
 import * as React from "react";
-import { BookOpen, Bot, ChevronDown, Flame, Gamepad2, History, Lightbulb, Moon, Sparkles, Star, Sun } from "lucide-react";
+import {
+  BookOpen,
+  Bot,
+  Brain,
+  CalendarDays,
+  ChevronDown,
+  Flame,
+  Gamepad2,
+  History,
+  Lightbulb,
+  Moon,
+  Sparkles,
+  Star,
+  StarOff,
+  Sun,
+  Target,
+  Crown,
+  Rocket,
+  Zap
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "./components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./components/ui/dialog";
 import { useTheme } from "./src/theme-provider";
 
 type TabId = "quiz" | "learn" | "history";
@@ -49,9 +69,9 @@ function CardContent({ className = "", ...props }: DivProps) {
 }
 
 const NAV_ITEMS: Array<{ id: TabId; labelKey: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: "quiz", labelKey: "tabs.quiz", icon: Gamepad2 },
-  { id: "learn", labelKey: "tabs.learn", icon: BookOpen },
-  { id: "history", labelKey: "tabs.history", icon: History }
+  { id: "quiz", labelKey: "nav.quiz", icon: Gamepad2 },
+  { id: "learn", labelKey: "nav.learn", icon: BookOpen },
+  { id: "history", labelKey: "nav.history", icon: History }
 ];
 
 const QUIZ_LEVELS: Array<{ id: DifficultyId; count: number; min: number; max: number }> = [
@@ -61,6 +81,7 @@ const QUIZ_LEVELS: Array<{ id: DifficultyId; count: number; min: number; max: nu
 ];
 
 const HISTORY_KEY = "multiplication-quiz-history-v2";
+const DAILY_FACT_SESSION_KEY = "hasSeenFact";
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -116,7 +137,7 @@ function ThemeToggleButton() {
       type="button"
       variant="ghost"
       onClick={toggleTheme}
-      aria-label={isDark ? t("theme.toLight") : t("theme.toDark")}
+      aria-label={t("settings.theme")}
       className="relative h-10 min-w-[40px] rounded-full border border-slate-300/80 bg-white/70 p-0 dark:border-slate-700 dark:bg-slate-900/80"
     >
       <Sun
@@ -125,7 +146,7 @@ function ThemeToggleButton() {
       <Moon
         className={`absolute h-5 w-5 text-cyan-400 transition-all duration-300 ${isDark ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"}`}
       />
-      <span className="sr-only">{isDark ? t("theme.light") : t("theme.dark")}</span>
+      <span className="sr-only">{t("settings.theme")}</span>
     </Button>
   );
 }
@@ -174,14 +195,14 @@ function LanguageMenu() {
             onClick={() => void setLanguage("en")}
             className={`flex h-10 w-full items-center rounded-xl px-3 text-left text-sm transition-all active:scale-95 ${current === "en" ? "bg-emerald-500 text-white" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}
           >
-            {t("language.english")}
+            EN
           </button>
           <button
             type="button"
             onClick={() => void setLanguage("ka")}
             className={`flex h-10 w-full items-center rounded-xl px-3 text-left text-sm transition-all active:scale-95 ${current === "ka" ? "bg-emerald-500 text-white" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}
           >
-            {t("language.georgian")}
+            KA
           </button>
         </div>
       )}
@@ -250,21 +271,16 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
       if (isCorrect) {
         setCorrectCount((prev) => prev + 1);
         setMascotMood("happy");
-        setMascotText(t("quiz.mascot.great"));
+        setMascotText(t("quiz.mascotCorrect"));
         setStreak((prev) => {
           const next = prev + 1;
           if ([3, 5, 10].includes(next)) {
-            setMilestonePopup(t("quiz.streakMilestone", { count: next }));
+            setMilestonePopup(t("quiz.streakFire"));
           }
           return next;
         });
       } else {
-        const encouragements = [
-          t("quiz.mascot.tryAgain"),
-          t("quiz.mascot.youCanDoIt"),
-          t("quiz.mascot.keepGoing"),
-          t("quiz.mascot.almostThere")
-        ];
+        const encouragements = [t("quiz.mascotIncorrect")];
         const randomPhrase = encouragements[randomInt(0, encouragements.length - 1)];
         setMascotMood("supportive");
         setMascotText(randomPhrase);
@@ -278,13 +294,10 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
           const earnedBadges: string[] = [];
           const isPerfect = nextCorrectCount === questions.length;
           if (isPerfect) {
-            earnedBadges.push("perfect_score");
-            if (difficulty === "easy") earnedBadges.push("easy_master");
-            if (difficulty === "medium") earnedBadges.push("medium_master");
-            if (difficulty === "hard") earnedBadges.push("hard_master");
-          }
-          if (streak >= 10 || [3, 5, 10].includes(streak)) {
-            earnedBadges.push("streak_star");
+            earnedBadges.push("perfectScore");
+            if (difficulty === "easy") earnedBadges.push("easyMaster");
+            if (difficulty === "medium") earnedBadges.push("mediumMaster");
+            if (difficulty === "hard") earnedBadges.push("hardMaster");
           }
           onComplete({ difficulty, score: nextCorrectCount, total: questions.length, badges: earnedBadges });
           return;
@@ -315,18 +328,13 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
                 onClick={() => setDifficulty(item.id)}
                 className="h-14 min-w-[132px] justify-start rounded-2xl px-4 text-left text-sm"
               >
-                {t("quiz.difficultyRange", {
-                  label: t(`quiz.difficulties.${item.id}`),
-                  count: item.count,
-                  min: item.min,
-                  max: item.max
-                })}
+                {t(`quiz.${item.id}`)}
               </Button>
             ))}
           </div>
           <div className="mt-3">
             <Button type="button" onClick={startQuiz} className="h-12 min-w-[140px] rounded-2xl px-6">
-              {started ? t("quiz.playAgain") : t("quiz.start")}
+              {t("quiz.start")}
             </Button>
           </div>
         </CardContent>
@@ -336,10 +344,12 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
         <CardContent className="space-y-5 pt-5 sm:pt-6">
           <div className="space-y-2">
             <div className="flex min-h-[24px] items-center justify-between text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
-              <span>{t("quiz.questionProgress", { current: started ? currentIndex + 1 : 0, total: totalQuestions })}</span>
+              <span>
+                {t("quiz.question")}: {started ? currentIndex + 1 : 0}/{totalQuestions}
+              </span>
               <div className="flex items-center gap-2">
                 <span className="min-w-[92px] text-right">
-                  Score: {correctCount}/{started ? currentIndex : 0}
+                  {t("quiz.score")}: {correctCount}/{started ? currentIndex : 0}
                 </span>
                 {streak >= 3 && (
                   <span className="fire-badge inline-flex min-w-[96px] items-center justify-center gap-1 rounded-full bg-orange-500/90 px-2 py-1 text-[11px] font-semibold text-white">
@@ -347,7 +357,7 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
                     On Fire!
                   </span>
                 )}
-                <span className="min-w-[84px] text-right">{t(`quiz.difficulties.${difficulty}`)}</span>
+                <span className="min-w-[84px] text-right">{t(`quiz.${difficulty}`)}</span>
               </div>
             </div>
             <div className="min-h-[28px]">
@@ -405,7 +415,7 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
                 <Bot className="h-5 w-5" />
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                {mascotText || t("quiz.mascot.default")}
+                {mascotText || t("quiz.mascotCorrect")}
               </p>
             </CardContent>
           </Card>
@@ -433,7 +443,7 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
 
           <form onSubmit={submitAnswer} className="space-y-3">
             <label className="block text-center text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
-              {t("quiz.yourAnswer")}
+              {t("quiz.question")}
             </label>
             <input
               ref={inputRef}
@@ -450,11 +460,11 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
             </Button>
             <p className="min-h-[24px] text-sm font-medium">
               {finished
-                ? t("quiz.finalScore", { score: correctCount, total: totalQuestions })
+                ? `${t("quiz.gameOver")} ${t("quiz.score")}: ${correctCount}/${totalQuestions}`
                 : feedback === "correct"
-                  ? t("quiz.correct")
+                  ? t("quiz.mascotCorrect")
                   : feedback === "incorrect"
-                    ? t("quiz.incorrect", { answer: currentQuestion?.answer ?? 0 })
+                    ? t("quiz.mascotIncorrect")
                     : "\u00a0"}
             </p>
           </form>
@@ -466,7 +476,7 @@ function QuizView({ onComplete }: { onComplete: (result: Omit<QuizResult, "date"
 
 function LearnView() {
   const { t } = useTranslation();
-  const [hovered, setHovered] = React.useState<{ row: number; col: number } | null>(null);
+  const [activeCell, setActiveCell] = React.useState<{ row: number; col: number } | null>(null);
   const numbers = React.useMemo(() => Array.from({ length: 10 }, (_, idx) => idx + 1), []);
 
   return (
@@ -478,26 +488,51 @@ function LearnView() {
         <CardContent>
           <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">{t("learn.hoverHint")}</p>
           <div className="overflow-x-auto rounded-2xl border border-slate-200 p-3 dark:border-slate-800">
-            <div className="grid min-w-[560px] grid-cols-11 gap-2">
-              <div className="flex h-10 items-center justify-center rounded-xl bg-slate-200 text-xs font-semibold dark:bg-slate-800">x</div>
+            <div className="grid min-w-[628px] grid-cols-11 gap-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-300 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                x
+              </div>
               {numbers.map((n) => (
                 <div
                   key={`h-${n}`}
-                  className={`flex h-10 items-center justify-center rounded-xl text-xs font-semibold ${hovered?.col === n ? "bg-emerald-500 text-white" : "bg-slate-200 dark:bg-slate-800"}`}
+                  className={[
+                    "flex h-12 w-12 items-center justify-center rounded-xl text-xs font-semibold transition-colors",
+                    activeCell?.col === n
+                      ? "bg-emerald-200 text-slate-900 dark:bg-emerald-900/50 dark:text-slate-100"
+                      : "bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                  ].join(" ")}
                 >
                   {n}
                 </div>
               ))}
               {numbers.map((row) => (
                 <React.Fragment key={`r-${row}`}>
-                  <div className={`flex h-10 items-center justify-center rounded-xl text-xs font-semibold ${hovered?.row === row ? "bg-emerald-500 text-white" : "bg-slate-200 dark:bg-slate-800"}`}>{row}</div>
+                  <div
+                    className={[
+                      "flex h-12 w-12 items-center justify-center rounded-xl text-xs font-semibold transition-colors",
+                      activeCell?.row === row
+                        ? "bg-emerald-200 text-slate-900 dark:bg-emerald-900/50 dark:text-slate-100"
+                        : "bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                    ].join(" ")}
+                  >
+                    {row}
+                  </div>
                   {numbers.map((col) => (
                     <button
                       key={`${row}-${col}`}
                       type="button"
-                      onMouseEnter={() => setHovered({ row, col })}
-                      onMouseLeave={() => setHovered(null)}
-                      className={`h-10 rounded-xl border text-xs transition-all ${hovered?.row === row || hovered?.col === col ? "border-emerald-300 bg-emerald-50 text-slate-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-slate-100" : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"}`}
+                      onMouseEnter={() => setActiveCell({ row, col })}
+                      onFocus={() => setActiveCell({ row, col })}
+                      onClick={() => setActiveCell({ row, col })}
+                      className={[
+                        "h-12 w-12 rounded-xl border text-xs font-medium transition-colors",
+                        activeCell?.row === row && activeCell?.col === col
+                          ? "border-emerald-400 bg-emerald-300/70 text-slate-900 dark:border-emerald-500 dark:bg-emerald-700/50 dark:text-slate-100"
+                          : activeCell?.row === row || activeCell?.col === col
+                            ? "border-emerald-200 bg-emerald-100/80 text-slate-900 dark:border-emerald-900 dark:bg-emerald-950/35 dark:text-slate-100"
+                            : "border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                      ].join(" ")}
+                      aria-label={`${row} x ${col} = ${row * col}`}
                     >
                       {row * col}
                     </button>
@@ -508,31 +543,73 @@ function LearnView() {
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("learn.patternHints")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm sm:text-base">
-          <p>
-            <span className="font-semibold">{t("learn.nineTitle")}</span> {t("learn.nineText")}
-          </p>
-          <p>
-            <span className="font-semibold">{t("learn.fiveTitle")}</span> {t("learn.fiveText")}
-          </p>
-        </CardContent>
-      </Card>
+      <SmartHints />
     </section>
+  );
+}
+
+function SmartHints() {
+  const { t } = useTranslation();
+  const hints = (t("smartHints.hints", { returnObjects: true }) as Array<{
+    icon: "zap" | "brain" | "target" | "sparkles" | "lightbulb";
+    title: string;
+    description: string;
+  }>) ?? [];
+
+  const iconMap = {
+    zap: Zap,
+    brain: Brain,
+    target: Target,
+    sparkles: Sparkles,
+    lightbulb: Lightbulb
+  } as const;
+
+  const tintClasses = [
+    "bg-amber-50/90 border-amber-200/80 dark:bg-amber-950/20 dark:border-amber-900/40",
+    "bg-sky-50/90 border-sky-200/80 dark:bg-sky-950/20 dark:border-sky-900/40",
+    "bg-emerald-50/90 border-emerald-200/80 dark:bg-emerald-950/20 dark:border-emerald-900/40",
+    "bg-violet-50/90 border-violet-200/80 dark:bg-violet-950/20 dark:border-violet-900/40"
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("smartHints.sectionTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {hints.map((hint, index) => {
+            const Icon = iconMap[hint.icon] ?? Sparkles;
+            return (
+              <Card
+                key={`${hint.title}-${index}`}
+                className={[
+                  "min-h-[150px] rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md",
+                  tintClasses[index % tintClasses.length]
+                ].join(" ")}
+              >
+                <CardContent className="pt-5">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-5 w-5 shrink-0 text-slate-700 dark:text-slate-200" />
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 sm:text-base">
+                      {hint.title}
+                    </h4>
+                  </div>
+                  <p className="mt-3 min-h-[64px] text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                    {hint.description}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 function HistoryView({ history, onClear }: { history: QuizResult[]; onClear: () => void }) {
   const { t } = useTranslation();
-  const average = history.length
-    ? Math.round(
-        history.reduce((sum, item) => sum + Math.round((item.score / item.total) * 100), 0) / history.length
-      )
-    : 0;
   const allBadges = React.useMemo(() => {
     const unique = new Set<string>();
     for (const item of history) {
@@ -541,54 +618,64 @@ function HistoryView({ history, onClear }: { history: QuizResult[]; onClear: () 
     return Array.from(unique);
   }, [history]);
 
+  const badgeStyleMap: Record<string, string> = {
+    perfectScore:
+      "border-violet-300/70 bg-gradient-to-br from-violet-100 via-fuchsia-100 to-pink-100 dark:border-violet-800/60 dark:from-violet-900/30 dark:via-fuchsia-900/25 dark:to-pink-900/20",
+    easyMaster:
+      "border-amber-300/70 bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-100 dark:border-amber-800/60 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20",
+    mediumMaster:
+      "border-slate-300/70 bg-gradient-to-br from-slate-100 via-zinc-100 to-gray-100 dark:border-slate-700/60 dark:from-slate-800/50 dark:via-zinc-800/40 dark:to-gray-800/40",
+    hardMaster:
+      "border-sky-300/70 bg-gradient-to-br from-sky-100 via-cyan-100 to-blue-100 dark:border-sky-800/60 dark:from-sky-900/30 dark:via-cyan-900/20 dark:to-blue-900/20"
+  };
+  const badgeIconMap = {
+    easyMaster: Zap,
+    mediumMaster: Brain,
+    hardMaster: Crown,
+    perfectScore: Rocket
+  } as const;
+
   return (
-    <section className="space-y-6">
-      <Card className="award-glow">
+    <section className="space-y-8">
+      <Card className="award-glow min-h-[220px]">
         <CardHeader>
-          <CardTitle>{t("history.myAwards")}</CardTitle>
+          <CardTitle>{t("history.awardsTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           {allBadges.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              {t("history.noAwards")}
+            <div className="flex min-h-[140px] items-center gap-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              <StarOff className="h-8 w-8 shrink-0 opacity-55" />
+              <p>{t("history.noAwards")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {allBadges.map((badge) => (
+              {allBadges.map((badge) => {
+                const BadgeIcon = badgeIconMap[badge as keyof typeof badgeIconMap] ?? Sparkles;
+                return (
                 <div
                   key={badge}
-                  className="award-card flex min-h-[90px] items-center gap-3 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 px-4 py-3 dark:border-amber-800/50 dark:from-amber-900/30 dark:via-fuchsia-900/20 dark:to-violet-900/20"
+                  className={[
+                    "award-card flex min-h-[96px] items-center gap-3 rounded-2xl border px-4 py-3 transition-all hover:scale-105",
+                    badgeStyleMap[badge] ??
+                      "border-slate-300/70 bg-gradient-to-br from-slate-100 via-zinc-100 to-gray-100 dark:border-slate-700/60 dark:from-slate-800/50 dark:via-zinc-800/40 dark:to-gray-800/40"
+                  ].join(" ")}
                 >
-                  <Sparkles className="h-5 w-5 text-amber-500" />
+                  <BadgeIcon className="h-5 w-5 text-amber-500" />
                   <span className="font-semibold text-slate-800 dark:text-slate-100">
                     {t(`history.badges.${badge}`)}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {[
-          { label: t("history.recentAttempts", { count: history.length }), value: `${history.length}` },
-          { label: t("history.accuracy", { value: average }), value: `${average}%` },
-          { label: t("history.title"), value: history[0] ? new Date(history[0].date).toLocaleDateString() : "--" }
-        ].map((stat) => (
-          <Card key={stat.label} className="min-h-[120px]">
-            <CardContent className="flex h-full flex-col justify-center pt-5 sm:pt-6">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
+      <Card className="min-h-[300px]">
         <CardHeader>
           <div className="flex items-center justify-between gap-2">
-            <CardTitle>{t("history.recentAttempts", { count: history.length })}</CardTitle>
+            <CardTitle>{t("history.pastGames")}</CardTitle>
             <Button type="button" variant="outline" className="h-10 min-w-[140px] rounded-2xl" onClick={onClear}>
               {t("history.clear")}
             </Button>
@@ -596,17 +683,32 @@ function HistoryView({ history, onClear }: { history: QuizResult[]; onClear: () 
         </CardHeader>
         <CardContent className="space-y-3">
           {history.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              {t("history.noAttempts")}
+            <div className="flex min-h-[140px] items-center gap-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              <History className="h-8 w-8 shrink-0 opacity-55" />
+              <p>{t("history.noGames")}</p>
             </div>
           ) : (
             history.map((item, idx) => (
               <div
                 key={`${item.date}-${idx}`}
-                className="flex min-h-[56px] items-center justify-between rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-800"
+                className="grid min-h-[72px] grid-cols-1 gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm sm:grid-cols-3 sm:items-center dark:border-slate-800"
               >
-                <span>{t("history.mode", { difficulty: t(`quiz.difficulties.${item.difficulty}`) })}</span>
-                <span>{t("history.score", { score: item.score, total: item.total })}</span>
+                <span className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                  <CalendarDays className="h-4 w-4" />
+                  {t("history.date")}: {new Date(item.date).toLocaleDateString()}
+                </span>
+                <span className="text-slate-700 dark:text-slate-200">
+                  {t("history.difficulty")}: {t(`quiz.${item.difficulty}`)}
+                </span>
+                <span
+                  className={`font-semibold ${
+                    (item.score / item.total) * 100 > 80
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  {t("quiz.score")}: {item.score}/{item.total}
+                </span>
               </div>
             ))
           )}
@@ -617,17 +719,32 @@ function HistoryView({ history, onClear }: { history: QuizResult[]; onClear: () 
 }
 
 export default function MultiplicationTableLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = React.useState<TabId>("quiz");
   const { history, addResult, clearHistory } = useQuizHistory();
+  const [dailyFactOpen, setDailyFactOpen] = React.useState(false);
+  const [dailyFact, setDailyFact] = React.useState("");
+
+  React.useEffect(() => {
+    const hasSeenFact = window.sessionStorage.getItem(DAILY_FACT_SESSION_KEY);
+    if (hasSeenFact) return;
+
+    const facts = t("funFacts", { returnObjects: true }) as string[];
+    if (!Array.isArray(facts) || facts.length === 0) return;
+
+    const randomFact = facts[randomInt(0, facts.length - 1)];
+    setDailyFact(randomFact);
+    setDailyFactOpen(true);
+    window.sessionStorage.setItem(DAILY_FACT_SESSION_KEY, "1");
+  }, [t]);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="sticky top-0 z-40 h-16 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/85">
         <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-3 sm:px-4">
           <div className="min-w-[180px]">
-            <h1 className="truncate text-base font-semibold sm:text-lg">{t("app.title")}</h1>
-            <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{t("app.subtitle")}</p>
+            <h1 className="truncate text-base font-semibold sm:text-lg">{t("quiz.title")}</h1>
+            <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{t("learn.title")}</p>
           </div>
           <div className="flex items-center gap-2">
             <LanguageMenu />
@@ -703,6 +820,23 @@ export default function MultiplicationTableLayout() {
           })}
         </ul>
       </nav>
+
+      <Dialog open={dailyFactOpen} onOpenChange={setDailyFactOpen}>
+        <DialogContent className="text-center">
+          <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-500 shadow-[0_0_25px_rgba(251,191,36,0.45)] dark:bg-amber-900/30 dark:text-amber-300">
+            <Lightbulb className="h-7 w-7" />
+          </div>
+          <DialogTitle>{i18n.language === "ka" ? "იცოდი რომ?" : "Did you know?"}</DialogTitle>
+          <DialogDescription className="mt-3 text-lg leading-relaxed">{dailyFact}</DialogDescription>
+          <Button
+            type="button"
+            onClick={() => setDailyFactOpen(false)}
+            className="mt-6 h-12 min-w-[180px] rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-base font-semibold text-white"
+          >
+            {i18n.language === "ka" ? "წავედით!" : "Let's Go!"}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
